@@ -397,6 +397,81 @@ select:focus {
   font-weight: 600;
 }
 
+.admin-bar {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.admin-bar__form,
+.admin-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-bar__status {
+  margin: 0;
+  font-weight: 700;
+  color: var(--deep);
+}
+
+.admin-key-field {
+  display: grid;
+  gap: 6px;
+  min-width: min(100%, 280px);
+  flex: 1;
+}
+
+.admin-key-field span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(19, 33, 61, 0.75);
+}
+
+.admin-key-field input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+}
+
+.admin-unlock-btn,
+.admin-lock-btn,
+.delete-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-unlock-btn {
+  background: var(--primary);
+  color: #fff;
+}
+
+.admin-lock-btn {
+  background: rgba(19, 33, 61, 0.08);
+  color: var(--deep);
+}
+
+.delete-btn {
+  background: #9b1c1c;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.delete-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .empty-state {
   margin-top: 8px;
   border: 1px dashed rgba(19, 33, 61, 0.18);

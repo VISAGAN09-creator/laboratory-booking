@@ -168,6 +168,34 @@ def write_booking(row: dict[str, str]) -> None:
         conn.commit()
 
 
+def delete_booking(booking_id: str) -> dict[str, str] | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT booking_id, name, designation, department, lab, component,
+                   from_datetime, to_datetime, booked_at
+            FROM bookings
+            WHERE booking_id = ?
+            """,
+            (booking_id,),
+        ).fetchone()
+        if not row:
+            return None
+        conn.execute("DELETE FROM bookings WHERE booking_id = ?", (booking_id,))
+        conn.commit()
+        return row_to_dict(row)
+
+
+def require_admin() -> tuple[dict, int] | None:
+    expected = os.getenv("ADMIN_API_KEY", "").strip()
+    provided = (request.headers.get("X-Admin-Key") or "").strip()
+    if not expected:
+        return {"errors": ["Admin delete is not configured. Set ADMIN_API_KEY."]}, 503
+    if not provided or provided != expected:
+        return {"errors": ["Invalid or missing admin key."]}, 401
+    return None
+
+
 def parse_slot(value: str) -> datetime | None:
     try:
         return datetime.fromisoformat(value)
@@ -280,6 +308,26 @@ def api_create_booking():
         write_booking(booking)
 
     return jsonify(booking), 201
+
+
+@app.route("/api/bookings/<booking_id>", methods=["DELETE"])
+def api_delete_booking(booking_id: str):
+    auth_error = require_admin()
+    if auth_error:
+        body, status = auth_error
+        return jsonify(body), status
+
+    cleaned_id = booking_id.strip()
+    if not cleaned_id:
+        return jsonify({"errors": ["Booking ID is required."]}), 400
+
+    with LOCK:
+        deleted = delete_booking(cleaned_id)
+
+    if not deleted:
+        return jsonify({"errors": [f"Booking {cleaned_id} was not found."]}), 404
+
+    return jsonify({"message": "Booking deleted.", "booking": deleted}), 200
 
 
 @app.route("/", defaults={"path": ""})

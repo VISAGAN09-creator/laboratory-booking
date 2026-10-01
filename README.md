@@ -56,6 +56,7 @@ Make sure the latest code is on GitHub first.
 | Key | Value |
 |-----|--------|
 | `FLASK_SECRET_KEY` | Generate a long random string (Render can auto-generate) |
+| `ADMIN_API_KEY` | Separate long random string used to delete bookings |
 | `DATABASE_PATH` | `data/bookings.db` |
 | `PYTHON_VERSION` | `3.12.8` |
 | `NODE_VERSION` | `20.18.0` |
@@ -81,6 +82,20 @@ After deploy, open:
 - Site home: `https://YOUR-APP.onrender.com/`
 - Health: `https://YOUR-APP.onrender.com/api/health`
 - Bookings API: `https://YOUR-APP.onrender.com/api/bookings`
+
+## Admin delete
+
+Admins can remove bookings from **Booked Details**:
+
+1. Enter the `ADMIN_API_KEY` value and click **Unlock delete**
+2. Use **Delete** on any row
+
+API equivalent:
+
+```bash
+curl -X DELETE https://YOUR-APP.onrender.com/api/bookings/RD-XXXXXXXX-XXXX ^
+  -H "X-Admin-Key: YOUR_ADMIN_API_KEY"
+```
 
 ## Notes
 

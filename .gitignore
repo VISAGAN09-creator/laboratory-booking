@@ -6,6 +6,7 @@ venv/
 .DS_Store
 node_modules/
 dist/
+.env.example
 
 # Local booking data
 data/bookings.csv

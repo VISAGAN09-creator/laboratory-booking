@@ -337,6 +337,11 @@ function BookedDetailsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('rd_admin_key') || '');
+  const [adminDraft, setAdminDraft] = useState('');
+  const [adminUnlocked, setAdminUnlocked] = useState(() => Boolean(sessionStorage.getItem('rd_admin_key')));
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [flash, setFlash] = useState<FlashMessage[]>([]);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -345,7 +350,7 @@ function BookedDetailsPage() {
         setBookings(await response.json());
       }
     } catch {
-      // silently fail — table will show empty state
+      setFlash([{ type: 'error', text: 'Could not load bookings from the server.' }]);
     } finally {
       setLoading(false);
     }
@@ -354,6 +359,56 @@ function BookedDetailsPage() {
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
+
+  const unlockAdmin = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const key = adminDraft.trim();
+    if (!key) {
+      setFlash([{ type: 'error', text: 'Enter the admin API key.' }]);
+      return;
+    }
+    sessionStorage.setItem('rd_admin_key', key);
+    setAdminKey(key);
+    setAdminUnlocked(true);
+    setAdminDraft('');
+    setFlash([{ type: 'success', text: 'Admin mode unlocked. You can delete bookings.' }]);
+  };
+
+  const lockAdmin = () => {
+    sessionStorage.removeItem('rd_admin_key');
+    setAdminKey('');
+    setAdminUnlocked(false);
+    setFlash([{ type: 'success', text: 'Admin mode locked.' }]);
+  };
+
+  const handleDelete = async (bookingId: string) => {
+    if (!adminKey) {
+      setFlash([{ type: 'error', text: 'Unlock admin mode first.' }]);
+      return;
+    }
+    if (!window.confirm(`Delete booking ${bookingId}? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingId(bookingId);
+    try {
+      const response = await fetch(`${API_BASE}/bookings/${encodeURIComponent(bookingId)}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Key': adminKey },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setFlash([{ type: 'error', text: (data.errors || ['Delete failed.'])[0] }]);
+        return;
+      }
+      setBookings((previous) => previous.filter((row) => row.booking_id !== bookingId));
+      setFlash([{ type: 'success', text: `Deleted ${bookingId}.` }]);
+    } catch {
+      setFlash([{ type: 'error', text: 'Could not reach the server to delete this booking.' }]);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredBookings = bookings.filter((booking) => {
     const haystack = `${booking.booking_id} ${booking.name} ${booking.lab}`.toLowerCase();
@@ -378,6 +433,43 @@ function BookedDetailsPage() {
         </label>
       </header>
 
+      <div className="admin-bar">
+        {adminUnlocked ? (
+          <div className="admin-bar__row">
+            <p className="admin-bar__status">Admin mode active</p>
+            <button type="button" className="admin-lock-btn" onClick={lockAdmin}>
+              Lock admin
+            </button>
+          </div>
+        ) : (
+          <form className="admin-bar__form" onSubmit={unlockAdmin}>
+            <label className="admin-key-field">
+              <span>Admin key</span>
+              <input
+                type="password"
+                autoComplete="off"
+                placeholder="Enter ADMIN_API_KEY"
+                value={adminDraft}
+                onChange={(event) => setAdminDraft(event.target.value)}
+              />
+            </label>
+            <button type="submit" className="admin-unlock-btn">
+              Unlock delete
+            </button>
+          </form>
+        )}
+      </div>
+
+      {flash.length > 0 ? (
+        <div className="flash-stack" role="status">
+          {flash.map((message) => (
+            <p key={`${message.type}-${message.text}`} className={`flash flash--${message.type}`}>
+              {message.text}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
       {loading ? (
         <p style={{ textAlign: 'center', padding: '2rem' }}>Loading bookings…</p>
       ) : filteredBookings.length > 0 ? (
@@ -394,6 +486,7 @@ function BookedDetailsPage() {
                   <th>Component</th>
                   <th>From</th>
                   <th>To</th>
+                  {adminUnlocked ? <th>Action</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -407,6 +500,18 @@ function BookedDetailsPage() {
                     <td>{row.component}</td>
                     <td>{formatSlot(row.from_datetime)}</td>
                     <td>{formatSlot(row.to_datetime)}</td>
+                    {adminUnlocked ? (
+                      <td>
+                        <button
+                          type="button"
+                          className="delete-btn"
+                          disabled={deletingId === row.booking_id}
+                          onClick={() => handleDelete(row.booking_id)}
+                        >
+                          {deletingId === row.booking_id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
