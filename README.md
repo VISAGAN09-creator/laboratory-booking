@@ -1,16 +1,16 @@
 # RMK Engineering College — Research Facility Booking
 
-Portal for the Center of Research & Development to book lab slots and view reservations.
+Public booking portal for the Center of Research & Development.
 
 ## Stack
 
 - **Frontend:** React + Vite + TypeScript
-- **Backend:** Flask API
-- **Storage:** CSV file (`data/bookings.csv`, created locally)
+- **Backend:** Flask API (also serves the built UI in production)
+- **Database:** SQLite
 
-## Setup
+## Local development
 
-1. Copy environment defaults:
+1. Copy env file:
 
 ```bash
 copy .env.example .env
@@ -23,8 +23,6 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
-API runs at `http://localhost:5000`.
-
 3. Frontend (new terminal):
 
 ```bash
@@ -32,10 +30,60 @@ npm install
 npm run dev
 ```
 
-App runs at `http://localhost:5173`.
+Open `http://localhost:5173`. Vite proxies `/api` to Flask on port 5000.
+
+## Deploy on Render (SQLite)
+
+### A. Push this repo to GitHub
+
+Make sure the latest code is on GitHub first.
+
+### B. Create a Web Service on Render
+
+1. Go to [https://dashboard.render.com](https://dashboard.render.com)
+2. **New → Web Service**
+3. Connect the `laboratory-booking` GitHub repo
+4. Use these settings:
+
+| Setting | Value |
+|---------|--------|
+| Runtime | Python |
+| Build Command | `bash build.sh` |
+| Start Command | `gunicorn "app:app" --bind 0.0.0.0:$PORT --workers 2 --threads 4` |
+
+5. Environment variables:
+
+| Key | Value |
+|-----|--------|
+| `FLASK_SECRET_KEY` | Generate a long random string (Render can auto-generate) |
+| `DATABASE_PATH` | `data/bookings.db` |
+| `PYTHON_VERSION` | `3.12.8` |
+| `NODE_VERSION` | `20.18.0` |
+
+6. Deploy. Render will give you a URL like `https://rd-facility-booking.onrender.com`.
+
+You can also use the included `render.yaml` via **New → Blueprint**.
+
+### Important about SQLite on free Render
+
+On the free plan, the filesystem is **ephemeral**. Bookings survive while the service stays up, but a **redeploy/restart can wipe the database**.
+
+For permanent storage:
+
+1. Upgrade to a paid Render plan
+2. Add a **Persistent Disk** mounted at `/var/data`
+3. Set `DATABASE_PATH=/var/data/bookings.db`
+
+## Production check
+
+After deploy, open:
+
+- Site home: `https://YOUR-APP.onrender.com/`
+- Health: `https://YOUR-APP.onrender.com/api/health`
+- Bookings API: `https://YOUR-APP.onrender.com/api/bookings`
 
 ## Notes
 
-- Logos live in `src/assests/` (`rmk.png`, `31yrs.png`).
-- Local booking rows stay in `data/bookings.csv` and are gitignored. A header-only template is committed as `data/bookings.example.csv`.
-- Set a strong `FLASK_SECRET_KEY` in `.env` before any shared/production use.
+- Logos: `src/assests/rmk.png`, `src/assests/31yrs.png`
+- Local DB file `data/bookings.db` is gitignored
+- The portal is currently open (no login). Add CAPTCHA/auth later if spam becomes an issue.

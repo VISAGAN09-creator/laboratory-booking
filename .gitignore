@@ -7,5 +7,7 @@ venv/
 node_modules/
 dist/
 
-# Local booking data (keep example only)
+# Local booking data
 data/bookings.csv
+data/bookings.db
+data/*.db-journal

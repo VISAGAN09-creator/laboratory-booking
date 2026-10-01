@@ -6,7 +6,7 @@ import { DEPARTMENTS, DESIGNATIONS, LAB_CATALOG } from './data';
 import { Booking, BookingFormValues, FlashMessage } from './types';
 import { NAME_PATTERN, formatSlot, parseSlot, slotsOverlap } from './utils';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 const initialFormValues: BookingFormValues = {
   name: '',
@@ -125,7 +125,7 @@ function BookingPage() {
   const [flash, setFlash] = useState<FlashMessage[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const selectedLabComponents = useMemo(() => {
+  const selectedLabComponents = useMemo((): readonly string[] => {
     if (!values.lab) return [];
     return LAB_CATALOG[values.lab as keyof typeof LAB_CATALOG] ?? [];
   }, [values.lab]);

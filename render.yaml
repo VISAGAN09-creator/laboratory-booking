@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: rd-facility-booking
+    runtime: python
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: gunicorn "app:app" --bind 0.0.0.0:$PORT --workers 2 --threads 4
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/bookings.db
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: NODE_VERSION
+        value: "20.18.0"
